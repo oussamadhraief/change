@@ -1,143 +1,143 @@
-# نظام تحرير النصوص العربية المتقدم
+# Advanced Arabic Text Editing System
 
-## نظرة عامة
+## Overview
 
-هذا النظام هو حل متقدم لتحرير النصوص العربية مع دعم كامل للتشكيل (التشكيل) والموافقات المتسلسلة. تم تصميمه خصيصاً للكتب العربية التي تحتاج إلى دقة عالية في التحرير والمراجعة.
+This system is an advanced solution for editing Arabic texts with full support for Tashkeel (diacritics) and chained approvals. It is specifically designed for Arabic books that require high precision in editing and review.
 
-## الميزات الرئيسية
+## Key Features
 
-### 🎯 دقة على مستوى الحرف
-- تتبع كل حرف بشكل منفصل مع معرف فريد
-- دعم كامل للتشكيل (الحركات) كعناصر منفصلة
-- تتبع المواقع الدقيقة لكل تغيير
+### 🎯 Character-Level Accuracy
+- Track each character separately with a unique ID
+- Full support for Tashkeel (vowels) as separate elements
+- Track the exact positions of each change
 
-### 🔄 نظام الموافقات المتسلسلة
-- إمكانية وجود اقتراحات متعددة لنفس الحرف
-- الموافقة على التغييرات بالتتابع
-- تحديث تلقائي للاقتراحات المعلقة بناءً على التغييرات المعتمدة
+### 🔄 Chained Approval System
+- Possibility of multiple suggestions for the same character
+- Approve changes sequentially
+- Automatic update of pending suggestions based on approved changes
 
-### 📝 أنواع التغييرات المدعومة
-- **التشكيل**: إضافة أو تعديل الحركات (الفتحة، الكسرة، الضمة، إلخ)
-- **الحروف الأساسية**: تغيير الحروف العربية
-- **الإدراج**: إضافة نصوص جديدة
-- **الحذف**: إزالة نصوص موجودة
+### 📝 Supported Change Types
+- **Tashkeel**: Add or modify diacritics (Fatha, Kasra, Damma, etc.)
+- **Main Characters**: Change Arabic letters
+- **Insertion**: Add new texts
+- **Deletion**: Remove existing texts
 
-### 🌐 دعم كامل للغة العربية
-- اتجاه النص من اليمين إلى اليسار (RTL)
-- خطوط عربية عالية الجودة
-- معالجة خاصة للكلمات المتصلة
+### 🌐 Full Arabic Language Support
+- Right-to-left (RTL) text direction
+- High-quality Arabic fonts
+- Special handling for connected words
 
-## كيفية الاستخدام
+## How to Use
 
-### 1. تحميل الصفحة
-- أدخل معرف الصفحة (Page ID)
-- أدخل اسم المستخدم
-- اضغط على "تحميل الصفحة"
+### 1. Load Page
+- Enter the Page ID
+- Enter the username
+- Click "Load Page"
 
-### 2. تحرير النص
-- انقر على أي حرف لتحديده
-- أضف اقتراحات جديدة من خلال لوحة التحكم الجانبية
-- يمكنك اقتراح تغييرات للتشكيل أو الحروف الأساسية
+### 2. Edit Text
+- Click on any character to select it
+- Add new suggestions through the side control panel
+- You can suggest changes for Tashkeel or main characters
 
-### 3. الموافقة على التغييرات
-- انقر على أي حرف لرؤية الاقتراحات
-- اضغط على ✓ للموافقة أو ✗ للرفض
-- ستتم الموافقة على التغييرات بالتتابع
+### 3. Approve Changes
+- Click on any character to see suggestions
+- Press ✓ to approve or ✗ to reject
+- Changes will be approved sequentially
 
-### 4. إرسال طلب التغيير
-- اضغط على "إرسال طلب التغيير"
-- سيتم إنشاء كائن يحتوي على جميع التغييرات
-- يمكن إرسال هذا الكائن إلى الخادم الخلفي
+### 4. Submit Change Request
+- Click "Submit Change Request"
+- An object containing all changes will be created
+- This object can be sent to the backend server
 
-## البنية التقنية
+## Technical Architecture
 
-### المكونات الرئيسية
+### Main Components
 
 #### `ArabicChangeEngine`
-- المحرك الرئيسي للنظام
-- يدير حالة النص والاقتراحات
-- يتعامل مع API الخادم
+- The main engine of the system
+- Manages the state of the text and suggestions
+- Handles server API interactions
 
 #### `ArabicTextRenderer`
-- يعرض النص العربي مع دعم RTL
-- يظهر مؤشرات بصرية للتغييرات
-- يدعم التفاعل مع المستخدم
+- Renders Arabic text with RTL support
+- Shows visual indicators for changes
+- Supports user interaction
 
 #### `ArabicChainVisualizer`
-- يعرض سلاسل التغييرات
-- يوضح كيفية ترابط الاقتراحات
-- يساعد في فهم تدفق الموافقات
+- Displays change chains
+- Illustrates how suggestions are linked
+- Helps in understanding the approval flow
 
 #### `ArabicDiffViewer`
-- يعرض الاختلافات بين النص الأصلي والمعدل
-- ترميز لوني للتغييرات
-- ملخص إحصائي للتغييرات
+- Displays differences between the original and modified text
+- Color coding for changes
+- Statistical summary of changes
 
-### هيكل البيانات
+### Data Structure
 
 #### `ArabicCharNode`
 ```typescript
 interface ArabicCharNode {
-  id: string                    // معرف فريد للحرف
-  position: string             // الموقع (1, 1.1, 1.1.1)
-  value: string                // القيمة الحالية
-  originalValue: string        // القيمة الأصلية
-  type: "main" | "tashkeel" | "space" | "punctuation"
-  suggestions: ArabicSuggestion[]
-  changeHistory: ArabicChangeHistoryEntry[]
-  lineNumber: number           // رقم السطر
-  wordNumber: number           // رقم الكلمة
-  sentenceNumber: number       // رقم الجملة
+  id: string;                    // Unique ID for the character
+  position: string;             // Position (1, 1.1, 1.1.1)
+  value: string;                // Current value
+  originalValue: string;        // Original value
+  type: "main" | "tashkeel" | "space" | "punctuation";
+  suggestions: ArabicSuggestion[];
+  changeHistory: ArabicChangeHistoryEntry[];
+  lineNumber: number;           // Line number
+  wordNumber: number;           // Word number
+  sentenceNumber: number;       // Sentence number
 }
 ```
 
 #### `ChangeRequestPayload`
 ```typescript
 interface ChangeRequestPayload {
-  pageId: string
-  bookId: string
-  userId: string
-  timestamp: string
-  changes: ArabicChangeRequest[]
-  originalText: string
-  modifiedText: string
+  pageId: string;
+  bookId: string;
+  userId: string;
+  timestamp: string;
+  changes: ArabicChangeRequest[];
+  originalText: string;
+  modifiedText: string;
   changeSummary: {
-    totalChanges: number
-    tashkeelChanges: number
-    mainCharChanges: number
-    insertions: number
-    deletions: number
-  }
+    totalChanges: number;
+    tashkeelChanges: number;
+    mainCharChanges: number;
+    insertions: number;
+    deletions: number;
+  };
 }
 ```
 
-## التثبيت والتشغيل
+## Installation and Running
 
-### المتطلبات
+### Requirements
 - Node.js 18+
-- pnpm (أو npm)
+- pnpm (or npm)
 
-### التثبيت
+### Installation
 ```bash
-# استنساخ المشروع
+# Clone the project
 git clone <repository-url>
 cd change
 
-# تثبيت التبعيات
+# Install dependencies
 pnpm install
 
-# تشغيل الخادم المحلي
+# Run the local server
 pnpm dev
 ```
 
-### الوصول
-- الصفحة الرئيسية: `http://localhost:3000`
-- صفحة إنشاء التغييرات: `http://localhost:3000/create-changes`
-- العرض التوضيحي: `http://localhost:3000/demo`
+### Access
+- Home page: `http://localhost:3000`
+- Create Changes page: `http://localhost:3000/create-changes`
+- Demo: `http://localhost:3000/demo`
 
-## التخصيص
+## Customization
 
-### إضافة خطوط عربية جديدة
+### Adding New Arabic Fonts
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Your+Arabic+Font:wght@400;500;600;700&display=swap');
 
@@ -146,47 +146,47 @@ pnpm dev
 }
 ```
 
-### تعديل أنواع التغييرات
-يمكنك إضافة أنواع تغيير جديدة في `arabicUtils` وتحديث الواجهات ذات الصلة.
+### Modifying Change Types
+You can add new change types in `arabicUtils` and update the relevant interfaces.
 
-### ربط API الخادم
-استبدل `mockApi` في `arabic-change-engine.tsx` باستدعاءات API حقيقية.
+### Linking Server API
+Replace `mockApi` in `arabic-change-engine.tsx` with actual API calls.
 
-## الاستخدامات
+## Use Cases
 
-### الكتب الدينية
-- تحرير القرآن الكريم
-- مراجعة الأحاديث النبوية
-- تصحيح النصوص الإسلامية
+### Religious Books
+- Editing the Holy Quran
+- Reviewing Hadiths
+- Correcting Islamic texts
 
-### الكتب الأدبية
-- مراجعة الشعر العربي
-- تحرير النصوص الأدبية
-- تصحيح القصص والروايات
+### Literary Books
+- Reviewing Arabic poetry
+- Editing literary texts
+- Correcting stories and novels
 
-### الوثائق التاريخية
-- تحرير المخطوطات القديمة
-- مراجعة النصوص التاريخية
-- الحفاظ على التراث العربي
+### Historical Documents
+- Editing ancient manuscripts
+- Reviewing historical texts
+- Preserving Arab heritage
 
-## المساهمة
+## Contribution
 
-نرحب بالمساهمات! يرجى:
-1. عمل Fork للمشروع
-2. إنشاء فرع للميزة الجديدة
-3. إرسال Pull Request
+We welcome contributions! Please:
+1. Fork the project
+2. Create a new feature branch
+3. Submit a Pull Request
 
-## الترخيص
+## License
 
-هذا المشروع مرخص تحت رخصة MIT.
+This project is licensed under the MIT License.
 
-## الدعم
+## Support
 
-إذا واجهت أي مشاكل أو لديك أسئلة، يرجى:
-- فتح Issue في GitHub
-- التواصل مع فريق التطوير
-- مراجعة الوثائق
+If you encounter any issues or have questions, please:
+- Open an Issue on GitHub
+- Contact the development team
+- Review the documentation
 
 ---
 
-**ملاحظة**: هذا النظام مصمم للعمل في المتصفح ولا يحتاج إلى تخزين البيانات في الخادم الخلفي. جميع العمليات تتم في الواجهة الأمامية لضمان السرعة والأمان.
+**Note**: This system is designed to work in the browser and does not require data storage on a backend server. All operations are performed on the front end to ensure speed and security.
