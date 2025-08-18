@@ -1,0 +1,51 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  html {
+    direction: ltr;
+  }
+  
+  html[dir="rtl"] {
+    direction: rtl;
+  }
+  
+  body {
+    font-family: 'Inter', 'Noto Naskh Arabic', system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .font-arabic {
+    font-family: 'Noto Naskh Arabic', serif;
+  }
+  
+  .font-arabic-main {
+    font-family: 'Noto Naskh Arabic', serif;
+    font-weight: 500;
+  }
+  
+  .text-rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  .text-ltr {
+    direction: ltr;
+    text-align: left;
+  }
+}
+
+@layer utilities {
+  .rtl {
+    direction: rtl;
+  }
+  
+  .ltr {
+    direction: ltr;
+  }
+}
