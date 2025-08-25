@@ -5,32 +5,66 @@ import { ArabicChangeEngine } from "@/components/arabic-change-engine"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Edit3, Eye } from "lucide-react"
-import type { OptimizedChangeRequest } from "@/lib/line-based-diff"
+import type { FullTextChangeRequest } from "@/lib/line-based-diff"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"create" | "review">("create")
   const [sharedText, setSharedText] = useState("")
-  const [submittedChanges, setSubmittedChanges] = useState<OptimizedChangeRequest[]>([])
+  const [submittedChanges, setSubmittedChanges] = useState<FullTextChangeRequest[]>([])
 
-  const handleSubmitChange = (changeRequest: OptimizedChangeRequest) => {
+  const handleSubmitChange = (changeRequest: FullTextChangeRequest) => {
     setSubmittedChanges(prev => [...prev, changeRequest]);
     setActiveTab("review");
   };
 
-  const handleApproveChange = (changeId: string) => {
-    setSubmittedChanges(prev =>
-      prev.map(change =>
-        change.id === changeId ? { ...change, status: "approved" } : change
-      )
-    );
+  const handleApproveChange = (requestId: string, wordChangeId: string) => {
+    if (wordChangeId === '') {
+      // Approve entire request
+      setSubmittedChanges(prev =>
+        prev.map(change =>
+          change.id === requestId ? { ...change, status: "approved" } : change
+        )
+      );
+    } else {
+      // Approve specific word change
+      setSubmittedChanges(prev =>
+        prev.map(request =>
+          request.id === requestId
+            ? {
+                ...request,
+                wordChanges: request.wordChanges.map(change =>
+                  change.id === wordChangeId ? { ...change, status: "approved" } : change
+                )
+              }
+            : request
+        )
+      );
+    }
   };
 
-  const handleDeclineChange = (changeId: string) => {
-    setSubmittedChanges(prev =>
-      prev.map(change =>
-        change.id === changeId ? { ...change, status: "declined" } : change
-      )
-    );
+  const handleDeclineChange = (requestId: string, wordChangeId: string) => {
+    if (wordChangeId === '') {
+      // Decline entire request
+      setSubmittedChanges(prev =>
+        prev.map(change =>
+          change.id === requestId ? { ...change, status: "declined" } : change
+        )
+      );
+    } else {
+      // Decline specific word change
+      setSubmittedChanges(prev =>
+        prev.map(request =>
+          request.id === requestId
+            ? {
+                ...request,
+                wordChanges: request.wordChanges.map(change =>
+                  change.id === wordChangeId ? { ...change, status: "declined" } : change
+                )
+              }
+            : request
+        )
+      );
+    }
   };
 
   return (

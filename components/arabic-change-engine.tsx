@@ -4,16 +4,16 @@ import { useState, useEffect, useRef, useMemo } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Check, X, Plus, Send, BookOpen, Edit3, Eye, Clock, CheckCircle, XCircle } from "lucide-react"
+import { Send, BookOpen, Edit3, Eye, Clock } from "lucide-react"
 import { ArabicChangeHistory } from "./arabic-change-history"
 import { ArabicChainVisualizer } from "./arabic-chain-visualizer"
 import { ArabicLineDiffViewer } from "./arabic-line-diff-viewer"
 import { ArabicAdminPanel } from "./arabic-admin-panel"
-import { arabicLineUtils, OptimizedChangeRequest, LineChange, OptimizedChangeSummary } from "@/lib/line-based-diff"
+import { ArabicTextWithChanges } from "./arabic-text-with-changes"
+import { arabicLineUtils, OptimizedChangeRequest, characterDiffUtils, FullTextChangeRequest } from "@/lib/line-based-diff"
 
 export interface ArabicCharNode {
   id: string
@@ -282,15 +282,13 @@ export function ArabicChangeEngine({
   isAdminMode?: boolean
   sharedText?: string
   onTextChange?: (text: string) => void
-  onSubmitChange?: (changeRequest: OptimizedChangeRequest) => void
-  submittedChanges?: OptimizedChangeRequest[]
-  onApproveChange?: (changeId: string) => void
-  onDeclineChange?: (changeId: string) => void
+  onSubmitChange?: (changeRequest: FullTextChangeRequest) => void
+  submittedChanges?: FullTextChangeRequest[]
+  onApproveChange?: (requestId: string, changeId: string) => void
+  onDeclineChange?: (requestId: string, changeId: string) => void
 }) {
   const [pageData, setPageData] = useState<ArabicPageData | null>(null)
   const [chars, setChars] = useState<ArabicCharNode[]>([])
-  const [selectedCharId, setSelectedCharId] = useState<string | null>(null)
-  const [newSuggestion, setNewSuggestion] = useState("")
   const [userName, setUserName] = useState("User")
   const [pageId, setPageId] = useState("page-1")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -357,107 +355,20 @@ export function ArabicChangeEngine({
     setChars(parsedChars)
   }
 
-  const approveSuggestion = async (charId: string, suggestionId: string) => {
-    setChars((prevChars) => {
-      return prevChars.map((char) => {
-        if (char.id !== charId) return char
-
-        const suggestion = char.suggestions.find((s) => s.id === suggestionId)
-        if (!suggestion || suggestion.status !== "pending") return char
-
-        const historyEntry: ArabicChangeHistoryEntry = {
-          id: uuidv4(),
-          fromValue: char.value,
-          toValue: suggestion.proposedValue,
-          user: userName,
-          timestamp: new Date().toISOString(),
-          suggestionId,
-          changeType: suggestion.changeType
-        }
-
-        const updatedSuggestions = char.suggestions.map((s) => ({
-          ...s,
-          status: s.id === suggestionId ? ("approved" as const) : s.status,
-        }))
-
-        const updatedSuggestionsWithNewBase = updatedSuggestions.map((s) => {
-          if (s.status === "pending" && s.id !== suggestionId) {
-            return {
-              ...s,
-              baseValue: suggestion.proposedValue,
-            }
-          }
-          return s
-        })
-
-        return {
-          ...char,
-          value: suggestion.proposedValue,
-          suggestions: updatedSuggestionsWithNewBase,
-          changeHistory: [...char.changeHistory, historyEntry],
-        }
-      })
-    })
-  }
-
-  const declineSuggestion = (charId: string, suggestionId: string) => {
-    setChars((prevChars) => {
-      return prevChars.map((char) => {
-        if (char.id !== charId) return char
-
-        const updatedSuggestions = char.suggestions.map((s) => ({
-          ...s,
-          status: s.id === suggestionId ? ("declined" as const) : s.status,
-        }))
-
-        return {
-          ...char,
-          suggestions: updatedSuggestions,
-        }
-      })
-    })
-  }
-
-  const addSuggestion = async (charId: string, proposedValue: string, changeType: "tashkeel" | "main" | "insert" | "delete") => {
-    const suggestion: ArabicSuggestion = {
-      id: uuidv4(),
-      proposedValue,
-      user: userName,
-      timestamp: new Date().toISOString(),
-      status: "pending",
-      changeType
-    }
-
-    setChars((prevChars) => {
-      return prevChars.map((char) => {
-        if (char.id !== charId) return char
-        return {
-          ...char,
-          suggestions: [...char.suggestions, suggestion],
-        }
-      })
-    })
-  }
-
   const submitChangeRequest = async () => {
     if (!pageData) return
 
     setIsSubmitting(true)
     
     try {
-      // Use the optimized line-based diff detection
-      const optimizedResult = arabicLineUtils.detectLineBasedChanges(pageData.content, editText)
-      
-      const payload: OptimizedChangeRequest = {
-        id: uuidv4(),
-        pageId: pageData.pageId,
-        bookId: pageData.bookId,
-        userId: userName,
-        timestamp: new Date().toISOString(),
-        status: "pending",
-        lineChanges: optimizedResult.lineChanges,
-        changeSummary: optimizedResult.changeSummary
-      }
+      // Create full text change request with character-level detection
+      const payload = characterDiffUtils.createFullTextChangeRequest(
+        pageData.pageId,
+        pageData.bookId,
+        userName,
+        pageData.content,
+        editText
+      )
 
       if (onSubmitChange) {
         onSubmitChange(payload)
@@ -473,8 +384,6 @@ export function ArabicChangeEngine({
       setIsSubmitting(false)
     }
   }
-
-  const getCurrentText = () => chars.map(char => char.value).join('')
 
   if (!pageData) {
     return (
@@ -720,13 +629,37 @@ export function ArabicChangeEngine({
         {/* Chain Visualizer */}
         <ArabicChainVisualizer chars={chars} />
 
+        {/* Text with Changes - Only show in admin mode */}
+        {isAdminMode && submittedChanges && submittedChanges.length > 0 && (
+          <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-blue-600" />
+                Review Text Changes
+              </CardTitle>
+              <p className="text-sm text-slate-500">
+                Click on highlighted characters to review and approve/decline changes
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ArabicTextWithChanges
+                originalText={pageData?.content || ""}
+                changeRequests={submittedChanges}
+                onApproveChange={onApproveChange || (() => {})}
+                onDeclineChange={onDeclineChange || (() => {})}
+                isAdminMode={true}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         {/* Admin Panel - Only show in admin mode */}
         {isAdminMode && submittedChanges && pageData && (
           <ArabicAdminPanel 
             submittedChanges={submittedChanges}
             originalContent={pageData.content}
-            onApproveRequest={onApproveChange || (() => {})}
-            onDeclineRequest={onDeclineChange || (() => {})}
+            onApproveRequest={(requestId) => onApproveChange?.(requestId, '')}
+            onDeclineRequest={(requestId) => onDeclineChange?.(requestId, '')}
           />
         )}
 

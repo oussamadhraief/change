@@ -18,6 +18,53 @@ export interface OptimizedChangeSummary {
   }
 }
 
+export interface WordChange {
+  id: string
+  wordIndex: number
+  lineNumber: number
+  originalWord: string
+  newWord: string
+  changeType: 'insert' | 'delete' | 'modify'
+  status: 'pending' | 'approved' | 'declined'
+  characterChanges: {
+    position: number
+    originalChar: string
+    newChar: string
+    changeType: 'insert' | 'delete' | 'modify'
+  }[]
+}
+
+export interface CharacterChange {
+  id: string
+  position: number
+  originalChar: string
+  newChar: string
+  changeType: 'insert' | 'delete' | 'modify'
+  status: 'pending' | 'approved' | 'declined'
+  wordIndex: number
+  lineNumber: number
+}
+
+export interface FullTextChangeRequest {
+  id: string
+  pageId: string
+  bookId: string
+  userId: string
+  timestamp: string
+  status: "pending" | "approved" | "declined"
+  originalText: string
+  modifiedText: string
+  wordChanges: WordChange[]
+  characterChanges: CharacterChange[]
+  changeSummary: {
+    totalChanges: number
+    wordChanges: number
+    insertions: number
+    deletions: number
+    modifications: number
+  }
+}
+
 export interface OptimizedChangeRequest {
   id: string
   pageId: string
@@ -27,6 +74,191 @@ export interface OptimizedChangeRequest {
   status: "pending" | "approved" | "declined"
   lineChanges: LineChange[]
   changeSummary: OptimizedChangeSummary
+}
+
+// Character-level diff utilities
+export const characterDiffUtils = {
+  // Detect character-level changes between two texts
+  detectCharacterChanges: (originalText: string, modifiedText: string): CharacterChange[] => {
+    const changes: CharacterChange[] = []
+    const originalLines = originalText.split('\n')
+    const modifiedLines = modifiedText.split('\n')
+    
+    let globalPosition = 0
+    let changeId = 0
+    
+    for (let lineIndex = 0; lineIndex < Math.max(originalLines.length, modifiedLines.length); lineIndex++) {
+      const originalLine = originalLines[lineIndex] || ''
+      const modifiedLine = modifiedLines[lineIndex] || ''
+      
+      const lineChanges = characterDiffUtils.diffLine(originalLine, modifiedLine, lineIndex + 1, globalPosition)
+      changes.push(...lineChanges.map(change => ({ ...change, id: `change_${changeId++}` })))
+      
+      globalPosition += Math.max(originalLine.length, modifiedLine.length) + 1 // +1 for newline
+    }
+    
+    return changes
+  },
+  
+  // Diff two lines character by character
+  diffLine: (originalLine: string, modifiedLine: string, lineNumber: number, startPosition: number): Omit<CharacterChange, 'id'>[] => {
+    const changes: Omit<CharacterChange, 'id'>[] = []
+    const maxLength = Math.max(originalLine.length, modifiedLine.length)
+    
+    let wordIndex = 0
+    let currentWord = ''
+    
+    for (let i = 0; i < maxLength; i++) {
+      const originalChar = originalLine[i] || ''
+      const modifiedChar = modifiedLine[i] || ''
+      
+      // Track word boundaries
+      if (modifiedChar === ' ' || i === modifiedLine.length - 1) {
+        if (currentWord.trim()) wordIndex++
+        currentWord = ''
+      } else {
+        currentWord += modifiedChar
+      }
+      
+      if (originalChar !== modifiedChar) {
+        let changeType: 'insert' | 'delete' | 'modify' = 'modify'
+        
+        if (originalChar === '') {
+          changeType = 'insert'
+        } else if (modifiedChar === '') {
+          changeType = 'delete'
+        }
+        
+        changes.push({
+          position: startPosition + i,
+          originalChar,
+          newChar: modifiedChar,
+          changeType,
+          status: 'pending',
+          wordIndex,
+          lineNumber
+        })
+      }
+    }
+    
+    return changes
+  },
+  
+  // Apply approved changes to text
+  applyApprovedChanges: (originalText: string, changes: CharacterChange[]): string => {
+    const approvedChanges = changes.filter(change => change.status === 'approved')
+      .sort((a, b) => b.position - a.position) // Apply from end to start to maintain positions
+    
+    let result = originalText
+    
+    for (const change of approvedChanges) {
+      if (change.changeType === 'insert') {
+        result = result.slice(0, change.position) + change.newChar + result.slice(change.position)
+      } else if (change.changeType === 'delete') {
+        result = result.slice(0, change.position) + result.slice(change.position + 1)
+      } else if (change.changeType === 'modify') {
+        result = result.slice(0, change.position) + change.newChar + result.slice(change.position + 1)
+      }
+    }
+    
+    return result
+  },
+  
+  // Detect word-level changes
+  detectWordChanges: (originalText: string, modifiedText: string): WordChange[] => {
+    const originalLines = originalText.split('\n')
+    const modifiedLines = modifiedText.split('\n')
+    const wordChanges: WordChange[] = []
+    let changeId = 0
+    
+    for (let lineIndex = 0; lineIndex < Math.max(originalLines.length, modifiedLines.length); lineIndex++) {
+      const originalLine = originalLines[lineIndex] || ''
+      const modifiedLine = modifiedLines[lineIndex] || ''
+      
+      const originalWords = originalLine.split(' ')
+      const modifiedWords = modifiedLine.split(' ')
+      
+      for (let wordIndex = 0; wordIndex < Math.max(originalWords.length, modifiedWords.length); wordIndex++) {
+        const originalWord = originalWords[wordIndex] || ''
+        const modifiedWord = modifiedWords[wordIndex] || ''
+        
+        if (originalWord !== modifiedWord) {
+          let changeType: 'insert' | 'delete' | 'modify' = 'modify'
+          
+          if (originalWord === '') {
+            changeType = 'insert'
+          } else if (modifiedWord === '') {
+            changeType = 'delete'
+          }
+          
+          // Get character-level changes within this word
+          const characterChanges = []
+          const maxLength = Math.max(originalWord.length, modifiedWord.length)
+          
+          for (let i = 0; i < maxLength; i++) {
+            const originalChar = originalWord[i] || ''
+            const modifiedChar = modifiedWord[i] || ''
+            
+            if (originalChar !== modifiedChar) {
+              let charChangeType: 'insert' | 'delete' | 'modify' = 'modify'
+              
+              if (originalChar === '') {
+                charChangeType = 'insert'
+              } else if (modifiedChar === '') {
+                charChangeType = 'delete'
+              }
+              
+              characterChanges.push({
+                position: i,
+                originalChar,
+                newChar: modifiedChar,
+                changeType: charChangeType
+              })
+            }
+          }
+          
+          wordChanges.push({
+            id: `word_change_${changeId++}`,
+            wordIndex,
+            lineNumber: lineIndex + 1,
+            originalWord,
+            newWord: modifiedWord,
+            changeType,
+            status: 'pending',
+            characterChanges
+          })
+        }
+      }
+    }
+    
+    return wordChanges
+  },
+  
+  // Create full text change request
+  createFullTextChangeRequest: (pageId: string, bookId: string, userId: string, originalText: string, modifiedText: string): FullTextChangeRequest => {
+    const characterChanges = characterDiffUtils.detectCharacterChanges(originalText, modifiedText)
+    const wordChanges = characterDiffUtils.detectWordChanges(originalText, modifiedText)
+    
+    return {
+      id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      pageId,
+      bookId,
+      userId,
+      timestamp: new Date().toISOString(),
+      status: 'pending',
+      originalText,
+      modifiedText,
+      wordChanges,
+      characterChanges,
+      changeSummary: {
+        totalChanges: characterChanges.length,
+        wordChanges: wordChanges.length,
+        insertions: characterChanges.filter(c => c.changeType === 'insert').length,
+        deletions: characterChanges.filter(c => c.changeType === 'delete').length,
+        modifications: characterChanges.filter(c => c.changeType === 'modify').length
+      }
+    }
+  }
 }
 
 // Arabic text utilities for line-based processing
