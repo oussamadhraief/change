@@ -29,13 +29,11 @@ export function ArabicChangeHistory({ chars }: ArabicChangeHistoryProps) {
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="text-right flex items-center gap-2">
-            <Clock className="w-5 h-5 text-slate-400" />
             سجل التغييرات
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📝</div>
             <p className="text-slate-500 text-lg">لم يتم الموافقة على أي تغييرات بعد</p>
             <p className="text-slate-400 text-sm mt-2">ستظهر هنا جميع التغييرات المعتمدة</p>
           </div>
@@ -68,7 +66,6 @@ export function ArabicChangeHistory({ chars }: ArabicChangeHistoryProps) {
     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
       <CardHeader>
         <CardTitle className="text-right flex items-center gap-2">
-          <CheckCircle className="w-5 h-5 text-green-600" />
           سجل التغييرات
           <Badge variant="secondary" className="ml-2">
             {allChanges.length}

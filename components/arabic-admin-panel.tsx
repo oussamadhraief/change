@@ -59,7 +59,6 @@ export function ArabicAdminPanel({
       <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
             Review Change Requests
           </CardTitle>
         </CardHeader>
@@ -74,7 +73,6 @@ export function ArabicAdminPanel({
     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg mt-6">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Eye className="w-5 h-5 text-blue-600" />
           Review Change Requests
         </CardTitle>
         <p className="text-sm text-slate-500 pt-2">

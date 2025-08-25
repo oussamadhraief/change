@@ -92,7 +92,6 @@ export default function Home() {
                 onClick={() => setActiveTab("review")}
                 className="flex items-center gap-2"
               >
-                <Eye className="w-4 h-4" />
                 Review Changes
               </Button>
             </div>

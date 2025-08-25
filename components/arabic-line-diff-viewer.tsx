@@ -90,7 +90,6 @@ export function ArabicLineDiffViewer({ originalText, newText, changes }: ArabicL
     <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="text-2xl">📊</span>
           Optimized Difference View
         </CardTitle>
       </CardHeader>
@@ -121,7 +120,6 @@ export function ArabicLineDiffViewer({ originalText, newText, changes }: ArabicL
         {changes.length > 0 && (
           <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">⚡</span>
               <div>
                 <div className="font-semibold text-emerald-800">Performance Improvement</div>
                 <div className="text-sm text-emerald-700">
